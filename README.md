@@ -1,7 +1,8 @@
 # golang-s3-batch-uploader
 
-Batch-processes a directory of CSV files with a bounded worker pool and
-uploads each valid file to S3. Hexagonal architecture
+Batch-processes a directory of CSV files with a bounded worker pool,
+normalizes each one, and uploads the processed output to S3. Hexagonal
+architecture
 (`handler/service/repository`), same conventions as the other projects in
 this workspace.
 
@@ -62,6 +63,11 @@ in one response - the DoD's partial-failure behavior, live.
   blocks the other files - see `service/batch_service_test.go` and
   `batch_integration_test.go` for both failure shapes (a bad CSV and a
   failed upload) proven independently.
+- **The uploaded object is not the input file verbatim**: `service/csv.go`'s
+  `processCSV` parses every row, trims whitespace from every field, and
+  rewrites the file - the object landing in S3 is this normalized output,
+  not a byte-for-byte copy of the input. A parse failure here is what a
+  malformed CSV actually fails on (see `service/csv_test.go`).
 - The S3 adapter (`repository/uploader_s3.go`) uses `aws-sdk-go-v2` with
   path-style addressing when an endpoint override is set (LocalStack
   requires this) and creates the target bucket if it doesn't exist yet, so a

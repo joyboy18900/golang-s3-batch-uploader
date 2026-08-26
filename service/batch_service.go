@@ -1,8 +1,8 @@
 package service
 
 import (
+	"bytes"
 	"context"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -97,16 +97,12 @@ func (s batchService) processFile(ctx context.Context, path string) FileResult {
 	}
 	defer f.Close()
 
-	if err := validateCSV(f); err != nil {
+	processed, err := processCSV(f)
+	if err != nil {
 		return FileResult{File: name, Error: err.Error()}
 	}
 
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		logs.Error("seek file: ", err)
-		return FileResult{File: name, Error: err.Error()}
-	}
-
-	if err := s.uploader.Upload(ctx, name, f); err != nil {
+	if err := s.uploader.Upload(ctx, name, bytes.NewReader(processed)); err != nil {
 		logs.Error("upload file: ", err)
 		return FileResult{File: name, Error: err.Error()}
 	}
