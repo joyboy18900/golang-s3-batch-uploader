@@ -66,16 +66,10 @@ func writeTestFile(t *testing.T, dir, name, content string) {
 	}
 }
 
-func TestBatchIntegration_PartialFailureDoesNotStopBatch(t *testing.T) {
-	dir := t.TempDir()
-	writeTestFile(t, dir, "good1.csv", "id,name\n1,foo\n")
-	writeTestFile(t, dir, "good2.csv", "id,name\n2,bar\n")
-	writeTestFile(t, dir, "bad.csv", "id,name\n\"unterminated,foo\n")
+func postBatch(t *testing.T, app *fiber.App, sourceDir string) service.BatchResult {
+	t.Helper()
 
-	uploader := newFakeUploader()
-	app := newIntegrationTestApp(uploader)
-
-	body, _ := json.Marshal(service.BatchRequest{SourceDir: dir})
+	body, _ := json.Marshal(service.BatchRequest{SourceDir: sourceDir})
 	req := httptest.NewRequest(http.MethodPost, "/batches", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -89,20 +83,35 @@ func TestBatchIntegration_PartialFailureDoesNotStopBatch(t *testing.T) {
 		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusOK)
 	}
 
-	var envelope struct {
-		Code    int                 `json:"code"`
-		Message string              `json:"message"`
-		Data    service.BatchResult `json:"data"`
-	}
+	var envelope handler.Envelope
+	envelope.Data = &service.BatchResult{}
 	if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
 
-	if len(envelope.Data.Succeeded) != 2 {
-		t.Errorf("succeeded count = %d, want 2 (got %v)", len(envelope.Data.Succeeded), envelope.Data.Succeeded)
+	result, ok := envelope.Data.(*service.BatchResult)
+	if !ok {
+		t.Fatalf("decoded data is not a BatchResult: %#v", envelope.Data)
 	}
-	if len(envelope.Data.Failed) != 1 {
-		t.Errorf("failed count = %d, want 1 (got %v)", len(envelope.Data.Failed), envelope.Data.Failed)
+	return *result
+}
+
+func TestBatchIntegration_PartialFailureDoesNotStopBatch(t *testing.T) {
+	dir := t.TempDir()
+	writeTestFile(t, dir, "good1.csv", "id,name\n1,foo\n")
+	writeTestFile(t, dir, "good2.csv", "id,name\n2,bar\n")
+	writeTestFile(t, dir, "bad.csv", "id,name\n\"unterminated,foo\n")
+
+	uploader := newFakeUploader()
+	app := newIntegrationTestApp(uploader)
+
+	result := postBatch(t, app, dir)
+
+	if len(result.Succeeded) != 2 {
+		t.Errorf("succeeded count = %d, want 2 (got %v)", len(result.Succeeded), result.Succeeded)
+	}
+	if len(result.Failed) != 1 {
+		t.Errorf("failed count = %d, want 1 (got %v)", len(result.Failed), result.Failed)
 	}
 	if !uploader.uploaded["good1.csv"] || !uploader.uploaded["good2.csv"] {
 		t.Errorf("expected both good files uploaded, got %v", uploader.uploaded)
@@ -120,33 +129,12 @@ func TestBatchIntegration_UploadFailureDoesNotStopBatch(t *testing.T) {
 	uploader := newFakeUploader("flaky.csv")
 	app := newIntegrationTestApp(uploader)
 
-	body, _ := json.Marshal(service.BatchRequest{SourceDir: dir})
-	req := httptest.NewRequest(http.MethodPost, "/batches", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	result := postBatch(t, app, dir)
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test() error = %v", err)
+	if len(result.Succeeded) != 1 || result.Succeeded[0].File != "ok.csv" {
+		t.Errorf("succeeded = %v, want [ok.csv]", result.Succeeded)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusOK)
-	}
-
-	var envelope struct {
-		Code    int                 `json:"code"`
-		Message string              `json:"message"`
-		Data    service.BatchResult `json:"data"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-
-	if len(envelope.Data.Succeeded) != 1 || envelope.Data.Succeeded[0].File != "ok.csv" {
-		t.Errorf("succeeded = %v, want [ok.csv]", envelope.Data.Succeeded)
-	}
-	if len(envelope.Data.Failed) != 1 || envelope.Data.Failed[0].File != "flaky.csv" {
-		t.Errorf("failed = %v, want [flaky.csv]", envelope.Data.Failed)
+	if len(result.Failed) != 1 || result.Failed[0].File != "flaky.csv" {
+		t.Errorf("failed = %v, want [flaky.csv]", result.Failed)
 	}
 }
