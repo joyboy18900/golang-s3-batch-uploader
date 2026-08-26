@@ -2,9 +2,8 @@
 
 Batch-processes a directory of CSV files with a bounded worker pool,
 normalizes each one, and uploads the processed output to S3. Hexagonal
-architecture
-(`handler/service/repository`), same conventions as the other projects in
-this workspace.
+architecture (`handler/service/repository`), same conventions as the other
+projects in this workspace.
 
 ## Run
 
