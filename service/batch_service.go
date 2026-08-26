@@ -93,7 +93,7 @@ func (s batchService) processFile(ctx context.Context, path string) FileResult {
 	f, err := os.Open(path)
 	if err != nil {
 		logs.Error("open file: ", err)
-		return FileResult{File: name, Error: err.Error()}
+		return FileResult{File: name, Error: "could not read file"}
 	}
 	defer f.Close()
 
@@ -104,7 +104,7 @@ func (s batchService) processFile(ctx context.Context, path string) FileResult {
 
 	if err := s.uploader.Upload(ctx, name, bytes.NewReader(processed)); err != nil {
 		logs.Error("upload file: ", err)
-		return FileResult{File: name, Error: err.Error()}
+		return FileResult{File: name, Error: "upload failed"}
 	}
 
 	return FileResult{File: name}
