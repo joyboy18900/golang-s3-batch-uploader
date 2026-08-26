@@ -14,7 +14,3 @@ func (e AppError) Error() string {
 func NewValidationError(msg string) error {
 	return AppError{Code: http.StatusUnprocessableEntity, Message: msg}
 }
-
-func NewUnexpectedError() error {
-	return AppError{Code: http.StatusInternalServerError, Message: "unexpected error"}
-}

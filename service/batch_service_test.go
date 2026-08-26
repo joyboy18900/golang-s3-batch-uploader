@@ -3,9 +3,13 @@ package service_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"golang-s3-batch-uploader/mock/mock_repository"
 	"golang-s3-batch-uploader/service"
@@ -107,5 +111,49 @@ func TestBatchService_Run(t *testing.T) {
 				t.Errorf("unexpected result counts: succeeded=%v failed=%v", result.Succeeded, result.Failed)
 			}
 		})
+	}
+}
+
+type concurrencyTrackingUploader struct {
+	inFlight  atomic.Int32
+	highWater atomic.Int32
+}
+
+func (u *concurrencyTrackingUploader) Upload(_ context.Context, _ string, body io.Reader) error {
+	if _, err := io.ReadAll(body); err != nil {
+		return err
+	}
+
+	current := u.inFlight.Add(1)
+	defer u.inFlight.Add(-1)
+
+	for {
+		high := u.highWater.Load()
+		if current <= high || u.highWater.CompareAndSwap(high, current) {
+			break
+		}
+	}
+
+	time.Sleep(20 * time.Millisecond)
+	return nil
+}
+
+func TestBatchService_Run_PoolIsBounded(t *testing.T) {
+	const workerCount = 3
+
+	dir := t.TempDir()
+	for i := 0; i < workerCount*3; i++ {
+		writeFile(t, dir, fmt.Sprintf("file%d.csv", i), "id,name\n1,foo\n")
+	}
+
+	uploader := &concurrencyTrackingUploader{}
+	svc := service.NewBatchService(uploader, workerCount)
+
+	if _, err := svc.Run(context.Background(), service.BatchRequest{SourceDir: dir}); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if high := uploader.highWater.Load(); high > workerCount {
+		t.Errorf("observed %d concurrent uploads, want <= %d (worker pool must stay bounded)", high, workerCount)
 	}
 }
