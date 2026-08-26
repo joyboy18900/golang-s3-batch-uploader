@@ -85,3 +85,6 @@ go generate ./...   # regenerate repository mocks
 `go test ./...` runs standalone, no LocalStack or network required - the
 `Uploader` port is mocked (`service/batch_service_test.go`) or faked
 in-memory (`batch_integration_test.go`).
+
+See `curl/flow.md` for a manual walkthrough against LocalStack, including
+proof that the uploaded object is processed and not a raw copy.
