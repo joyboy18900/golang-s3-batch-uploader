@@ -70,8 +70,11 @@ in one response - the DoD's partial-failure behavior, live.
   malformed CSV actually fails on (see `service/csv_test.go`).
 - The S3 adapter (`repository/uploader_s3.go`) uses `aws-sdk-go-v2` with
   path-style addressing when an endpoint override is set (LocalStack
-  requires this) and creates the target bucket if it doesn't exist yet, so a
-  fresh `docker-compose up` needs no manual bucket setup.
+  requires this). Bucket creation (`s3.auto_create_bucket`) is opt-in and
+  defaults to `false` - against real AWS the app should only need
+  `s3:PutObject`, not bucket-admin permissions, so auto-create-on-startup
+  stays off there. `docker-compose.yml` turns it on for the LocalStack demo
+  so a fresh `docker-compose up` needs no manual bucket setup.
 - Not done on purpose: no retry/backoff on upload failure, no resumable
   batches, no per-file size limit.
 

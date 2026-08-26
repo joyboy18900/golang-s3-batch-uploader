@@ -16,7 +16,7 @@ type uploaderS3 struct {
 	bucket string
 }
 
-func NewUploaderS3(ctx context.Context, region, endpoint, bucket string) (Uploader, error) {
+func NewUploaderS3(ctx context.Context, region, endpoint, bucket string, autoCreateBucket bool) (Uploader, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		return nil, err
@@ -30,8 +30,10 @@ func NewUploaderS3(ctx context.Context, region, endpoint, bucket string) (Upload
 	})
 
 	u := uploaderS3{client: client, bucket: bucket}
-	if err := u.ensureBucket(ctx); err != nil {
-		return nil, err
+	if autoCreateBucket {
+		if err := u.ensureBucket(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	return u, nil

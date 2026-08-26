@@ -24,6 +24,7 @@ func main() {
 		viper.GetString("s3.region"),
 		viper.GetString("s3.endpoint"),
 		viper.GetString("s3.bucket"),
+		viper.GetBool("s3.auto_create_bucket"),
 	)
 	if err != nil {
 		logs.Error(err)

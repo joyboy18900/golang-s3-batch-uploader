@@ -8,3 +8,4 @@ s3:
   region: us-east-1
   endpoint: ""
   bucket: batch-uploads
+  auto_create_bucket: false

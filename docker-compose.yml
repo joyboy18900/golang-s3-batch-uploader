@@ -23,6 +23,7 @@ services:
       S3_REGION: us-east-1
       S3_ENDPOINT: http://localstack:4566
       S3_BUCKET: batch-uploads
+      S3_AUTO_CREATE_BUCKET: "true"
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
     ports:
