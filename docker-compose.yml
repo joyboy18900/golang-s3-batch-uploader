@@ -1,0 +1,31 @@
+services:
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      SERVICES: s3
+      DEFAULT_REGION: us-east-1
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      APP_PORT: 8080
+      BATCH_WORKER_COUNT: 4
+      S3_REGION: us-east-1
+      S3_ENDPOINT: http://localstack:4566
+      S3_BUCKET: batch-uploads
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./testdata:/data
