@@ -54,6 +54,12 @@ docker compose exec localstack awslocal s3 ls s3://batch-uploads/
 
 `bad.csv` never reaches the uploader - it isn't listed.
 
+LocalStack also answers plain, unsigned HTTP - no AWS CLI needed. With the
+stack running, open these directly in a browser:
+
+- `http://localhost:4566/batch-uploads/` - bucket listing (XML)
+- `http://localhost:4566/batch-uploads/good1.csv` - the object's raw content
+
 ## 3. Confirm the upload is processed, not a byte-for-byte copy
 
 `good1.csv` on disk has stray whitespace around fields. Compare it against
