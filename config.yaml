@@ -1,0 +1,10 @@
+app:
+  port: 8080
+
+batch:
+  worker_count: 4
+
+s3:
+  region: us-east-1
+  endpoint: ""
+  bucket: batch-uploads
