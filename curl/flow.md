@@ -39,7 +39,7 @@ curl -X POST http://localhost:8080/batches \
 }
 ```
 
-One malformed file never stops the rest of the batch - that is the point.
+One malformed file never stops the rest of the batch. That is the point.
 
 ## 2. Confirm the objects actually landed in S3 (LocalStack)
 
@@ -52,10 +52,10 @@ docker compose exec localstack awslocal s3 ls s3://batch-uploads/
 2026-08-26 06:34:12         14 good2.csv
 ```
 
-`bad.csv` never reaches the uploader - it isn't listed.
+`bad.csv` never reaches the uploader. It isn't listed.
 
-LocalStack also answers plain, unsigned HTTP - no AWS CLI needed. With the
-stack running, open these directly in a browser:
+LocalStack also answers plain, unsigned HTTP, so no AWS CLI is needed. With
+the stack running, open these directly in a browser:
 
 - `http://localhost:4566/batch-uploads/` - bucket listing (XML)
 - `http://localhost:4566/batch-uploads/good1.csv` - the object's raw content
@@ -76,7 +76,7 @@ id,name
 2,bar
 ```
 
-The uploaded object has every field trimmed - `service/csv.go`'s
+The uploaded object has every field trimmed. `service/csv.go`'s
 `processCSV` normalized it before upload.
 
 ## 4. Rejection case: missing `source_dir`

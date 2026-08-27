@@ -9,7 +9,7 @@ normalizes each one, and uploads the processed output to S3.
 docker-compose up
 ```
 
-Brings up LocalStack (S3 on `localhost:4566`) and the app - no AWS account
+Brings up LocalStack (S3 on `localhost:4566`) and the app. No AWS account
 needed.
 
 ## Endpoint
@@ -29,7 +29,7 @@ go test ./...
 go generate ./...   # regenerate repository mocks
 ```
 
-`go test ./...` runs standalone, no LocalStack or network required - the
+`go test ./...` runs standalone, no LocalStack or network required. The
 `Uploader` port is mocked or faked in-memory.
 
 See `curl/flow.md` for a manual walkthrough against LocalStack.
